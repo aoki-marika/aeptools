@@ -15,9 +15,9 @@ class Project(object):
         # ensure there are no invalid asset references
         for composition in compositions:
             for layer in composition.layers:
-                if isinstance(layer, TextureLayer):
+                if layer.type == LayerType.TEXTURE:
                     assert(any(t.name == layer.asset_name for t in self.textures))
-                elif isinstance(layer, CompositionLayer):
+                elif layer.type == LayerType.COMPOSITION:
                     assert(any(c.name == layer.asset_name for c in self.compositions))
 
 class Texture(object):
@@ -36,6 +36,13 @@ class Composition(object):
         self.height = height
         self.layers = layers
 
+class LayerType(Enum):
+    # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#contents-type
+
+    COMPOSITION = 0x4
+    COLOUR = 0x6
+    TEXTURE = 0x7
+
 class BlendMode(Enum):
     # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#blend-mode
 
@@ -43,10 +50,68 @@ class BlendMode(Enum):
     ADDITIVE = 0x4
     UNKNOWN = 0x5
 
+class PositionKeyframe:
+    pass
+
+class AnchorPointKeyframe:
+    pass
+
+class ColourKeyframe:
+    pass
+
+class ScaleKeyframe:
+    pass
+
+class AlphaKeyframe:
+    pass
+
+class RotationKeyframe:
+    pass
+
+class SizeKeyframe:
+    pass
+
+class Marker:
+    pass
+
 class Layer(object):
-    def __init__(self, name: str, blend_mode: BlendMode) -> None:
+    def __init__(
+        self,
+        name: str,
+        type: LayerType,
+        blend_mode: BlendMode,
+        timeline_start: Optional[int],
+        timeline_unknown1: Optional[int],
+        timeline_duration: Optional[int],
+        timeline_unknown2: Optional[int],
+        position_keyframes: Optional[Sequence[PositionKeyframe]],
+        anchor_point_keyframes: Optional[Sequence[AnchorPointKeyframe]],
+        colour_keyframes: Optional[Sequence[ColourKeyframe]],
+        scale_keyframes: Optional[Sequence[ScaleKeyframe]],
+        alpha_keyframes: Optional[Sequence[AlphaKeyframe]],
+        rotation_x_keyframes: Optional[Sequence[RotationKeyframe]],
+        rotation_y_keyframes: Optional[Sequence[RotationKeyframe]],
+        rotation_z_keyframes: Optional[Sequence[RotationKeyframe]],
+        size_keyframes: Optional[Sequence[SizeKeyframe]],
+        markers: Optional[Sequence[Marker]],
+    ) -> None:
         self.name = name
+        self.type = type
         self.blend_mode = blend_mode
+        self.timeline_start = timeline_start
+        self.timeline_unknown1 = timeline_unknown1
+        self.timeline_duration = timeline_duration
+        self.timeline_unknown2 = timeline_unknown2
+        self.position_keyframes = position_keyframes
+        self.anchor_point_keyframes = anchor_point_keyframes
+        self.colour_keyframes = colour_keyframes
+        self.scale_keyframes = scale_keyframes
+        self.alpha_keyframes = alpha_keyframes
+        self.rotation_x_keyframes = rotation_x_keyframes
+        self.rotation_y_keyframes = rotation_y_keyframes
+        self.rotation_z_keyframes = rotation_z_keyframes
+        self.size_keyframes = size_keyframes
+        self.markers = markers
 
     @property
     def asset_name(self):
@@ -57,11 +122,56 @@ class Layer(object):
         else:
             return self.name
 
-class TextureLayer(Layer):
-    pass
+class Keyframe(object):
+    def __init__(self, frame: int) -> None:
+        self.frame = frame
 
-class CompositionLayer(Layer):
-    pass
+class PositionKeyframe(Keyframe):
+    def __init__(self, frame: int, x: float, y: float, z: float):
+        super().__init__(frame)
+        self.x = x
+        self.y = y
+        self.z = z
 
-class ColourLayer(Layer):
-    pass
+class AnchorPointKeyframe(Keyframe):
+    def __init__(self, frame: int, x: float, y: float, z: float):
+        super().__init__(frame)
+        self.x = x
+        self.y = y
+        self.z = z
+
+class ColourKeyframe(Keyframe):
+    def __init__(self, frame: int, r: int, g: int, b: int, a: int):
+        super().__init__(frame)
+        self.r = r
+        self.g = g
+        self.b = b
+        self.a = a
+
+class ScaleKeyframe(Keyframe):
+    def __init__(self, frame: int, x: float, y: float):
+        super().__init__(frame)
+        self.x = x
+        self.y = y
+
+class AlphaKeyframe(Keyframe):
+    def __init__(self, frame: int, value: float):
+        super().__init__(frame)
+        self.value = value
+
+class RotationKeyframe(Keyframe):
+    def __init__(self, frame: int, degrees: float):
+        super().__init__(frame)
+        self.degrees = degrees
+
+class SizeKeyframe(Keyframe):
+    def __init__(self, frame: int, width: int, height: int):
+        super().__init__(frame)
+        self.width = width
+        self.height = height
+
+class Marker(Keyframe):
+    def __init__(self, frame: int, name: str, unknown: int):
+        super().__init__(frame)
+        self.name = name
+        self.unknown = unknown
