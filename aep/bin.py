@@ -2,6 +2,7 @@ import struct
 from io import BufferedReader, BufferedWriter
 from enum import Enum
 from typing import Optional, Union, Callable, Sequence
+from pathlib import Path
 from .aep import Project, Texture, Composition, Layer, LayerType, BlendMode, Keyframe, PositionKeyframe, AnchorPointKeyframe, ColourKeyframe, ScaleKeyframe, AlphaKeyframe, RotationKeyframe, SizeKeyframe, Marker
 
 ENDIANNESS = 'little'
@@ -73,18 +74,19 @@ class BinaryDecoder(object):
     def __init__(self, architecture: Architecture) -> None:
         self.architecture = architecture
 
-    def decode(self, input_file: BufferedReader) -> Project:
-        reader = BinaryReader(input_file, self.architecture)
+    def decode(self, input_path: Path) -> Project:
+        with input_path.open('rb') as input_file:
+            reader = BinaryReader(input_file, self.architecture)
 
-        # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#project
+            # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#project
 
-        assets = []
-        while reader.peek(16) != (b'\0' * 16):
-            assets.append(self._decode_asset(reader))
+            assets = []
+            while reader.peek(16) != (b'\0' * 16):
+                assets.append(self._decode_asset(reader))
 
-        textures = [a for a in assets if isinstance(a, Texture)]
-        compositions = [a for a in assets if isinstance(a, Composition)]
-        return Project(textures, compositions)
+            textures = [a for a in assets if isinstance(a, Texture)]
+            compositions = [a for a in assets if isinstance(a, Composition)]
+            return Project(textures, compositions)
 
     def _decode_asset(self, reader: BinaryReader) -> Union[Texture, Composition]:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#asset
@@ -327,5 +329,5 @@ class BinaryEncoder(object):
     def __init__(self, architecture: Architecture) -> None:
         self.architecture = architecture
 
-    def encode(self, project: Project, output_file: BufferedWriter) -> None:
+    def encode(self, project: Project, output_path: Path) -> None:
         return

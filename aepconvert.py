@@ -36,11 +36,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    with args.input_path.open('rb') as file:
-        project = DECODERS[args.input_format].decode(file)
-
-    with args.output_path.open('wb+') as file:
-        ENCODERS[args.output_format].encode(project, file)
+    project = DECODERS[args.input_format].decode(args.input_path)
+    ENCODERS[args.output_format].encode(project, args.output_path)
 
 if __name__ == '__main__':
     main()
