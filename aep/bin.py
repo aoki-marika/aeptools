@@ -7,6 +7,20 @@ from .aep import Project, Texture, Composition, Layer, LayerType, BlendMode, Key
 
 ENDIANNESS = 'little'
 
+# https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#contents-type
+LAYER_TYPES = {
+    0x4: LayerType.COMPOSITION,
+    0x6: LayerType.COLOUR,
+    0x7: LayerType.TEXTURE,
+}
+
+# https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#blend-mode
+BLEND_MODES = {
+    0x2: BlendMode.NORMAL,
+    0x4: BlendMode.ADDITIVE,
+    0x5: BlendMode.UNKNOWN,
+}
+
 class Architecture(Enum):
     X86 = 'x86'
     X64 = 'x64'
@@ -137,8 +151,8 @@ class BinaryDecoder(object):
 
         size = reader.read_u16()
         type_blend_mode = reader.read_u8()
-        type = LayerType((type_blend_mode >> 4) & 0xf)
-        blend_mode = BlendMode(type_blend_mode & 0xf)
+        type = LAYER_TYPES[(type_blend_mode >> 4) & 0xf]
+        blend_mode = BLEND_MODES[type_blend_mode & 0xf]
 
         # padding
         assert(reader.read_u8() == 0x0)
@@ -323,7 +337,7 @@ class BinaryDecoder(object):
 
         unknown = reader.read_u32()
         name = reader.read_string()
-        return Marker(frame, name, unknown)
+        return Marker(frame, unknown, name)
 
 class BinaryEncoder(object):
     def __init__(self, architecture: Architecture) -> None:

@@ -37,18 +37,14 @@ class Composition(object):
         self.layers = layers
 
 class LayerType(Enum):
-    # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#contents-type
-
-    COMPOSITION = 0x4
-    COLOUR = 0x6
-    TEXTURE = 0x7
+    COMPOSITION = 0
+    COLOUR = 1
+    TEXTURE = 2
 
 class BlendMode(Enum):
-    # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#blend-mode
-
-    NORMAL = 0x2
-    ADDITIVE = 0x4
-    UNKNOWN = 0x5
+    NORMAL = 0
+    ADDITIVE = 1
+    UNKNOWN = 2
 
 class PositionKeyframe:
     pass
@@ -171,7 +167,7 @@ class SizeKeyframe(Keyframe):
         self.height = height
 
 class Marker(Keyframe):
-    def __init__(self, frame: int, name: str, unknown: int):
+    def __init__(self, frame: int, unknown: int, name: str):
         super().__init__(frame)
-        self.name = name
         self.unknown = unknown
+        self.name = name
