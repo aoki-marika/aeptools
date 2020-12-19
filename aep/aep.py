@@ -16,9 +16,11 @@ class Project(object):
         for composition in compositions:
             for layer in composition.layers:
                 if layer.type == LayerType.TEXTURE:
-                    assert(any(t.name == layer.asset_name for t in self.textures))
+                    if not any(t.name == layer.asset_name for t in self.textures):
+                        raise ValueError(f'layer \'{layer.name}\' references unknown texture ({layer.asset_name})')
                 elif layer.type == LayerType.COMPOSITION:
-                    assert(any(c.name == layer.asset_name for c in self.compositions))
+                    if not any(c.name == layer.asset_name for c in self.compositions):
+                        raise ValueError(f'layer \'{layer.name}\' references unknown composition ({layer.asset_name})')
 
 class Texture(object):
     def __init__(self, name: str, width: int, height: int) -> None:

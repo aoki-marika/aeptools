@@ -115,7 +115,9 @@ class BinaryDecoder(object):
             height = reader.read_u16()
             num_layers = reader.read_count()
             layers_pointer = reader.read_pointer()
-            assert(size == 20)
+
+            if size != 20:
+                raise ValueError(f'x86 asset \'{name}\' not 20 bytes ({size})')
         elif self.architecture == Architecture.X64:
             name = reader.read_string()
             size = reader.read_u16()
@@ -124,14 +126,18 @@ class BinaryDecoder(object):
             height = reader.read_u16()
             layers_pointer = reader.read_pointer()
             num_layers = reader.read_count()
-            assert(size == 32)
+
+            if size != 32:
+                raise ValueError(f'x64 asset \'{name}\' not 32 bytes ({size})')
 
         if type == AssetType.TEXTURE:
-            assert(num_layers == 0)
-            assert(layers_pointer == 0x0)
+            if num_layers != 0 or layers_pointer != 0x0:
+                raise ValueError(f'texture \'{name}\' has non-zero layers ({num_layers} at {hex(layers_pointer)})')
+
             asset = Texture(name, width, height)
         elif type == AssetType.COMPOSITION:
-            assert(layers_pointer != 0x0)
+            if layers_pointer == 0x0:
+                raise ValueError(f'composition \'{name}\' has null layers pointers ({num_layers} at {hex(layers_pointer)})')
 
             layers = []
             reader.seek(layers_pointer)
@@ -174,9 +180,11 @@ class BinaryDecoder(object):
         marker_keyframes_pointer = reader.read_pointer()
 
         if self.architecture == Architecture.X86:
-            assert(size == 56)
+            if size != 56:
+                raise ValueError(f'x86 layer \'{name}\' not 56 bytes ({size})')
         elif self.architecture == Architecture.X64:
-            assert(size == 112)
+            if size != 112:
+                raise ValueError(f'x64 layer \'{name}\' not 112 bytes ({size})')
 
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#timeline
         if timeline_pointer != 0x0:
@@ -186,8 +194,12 @@ class BinaryDecoder(object):
             timeline_unknown1 = reader.read_u16()
             timeline_duration = reader.read_u16()
             timeline_unknown2 = reader.read_u32()
-            assert(timeline_size == 12)
-            assert(timeline_unknown2 == 4096)
+
+            if timeline_size != 12:
+                raise ValueError(f'layer \'{name}\' timeline not 12 bytes ({timeline_size})')
+
+            if timeline_unknown2 != 4096:
+                raise ValueError(f'layer \'{name}\' unknown2 not 4096 ({timeline_unknown2})')
         else:
             timeline_start = None
             timeline_unknown1 = None
@@ -199,7 +211,11 @@ class BinaryDecoder(object):
         colour_keyframes = self._decode_keyframes(reader, colour_keyframes_pointer, self._decode_colour_keyframe)
         scale_keyframes = self._decode_keyframes(reader, scale_keyframes_pointer, self._decode_scale_keyframe)
         alpha_keyframes = self._decode_keyframes(reader, alpha_keyframes_pointer, self._decode_alpha_keyframe)
-        assert(unknown_keyframes_pointer == 0x0) #unused
+
+        # unused
+        if unknown_keyframes_pointer != 0x0:
+            raise ValueError(f'layer \'{name}\' has unknown keyframes at {hex(unknown_keyframes_pointer)}')
+
         rotation_x_keyframes = self._decode_keyframes(reader, rotation_x_keyframes_pointer, self._decode_rotation_keyframe)
         rotation_y_keyframes = self._decode_keyframes(reader, rotation_y_keyframes_pointer, self._decode_rotation_keyframe)
         rotation_z_keyframes = self._decode_keyframes(reader, rotation_z_keyframes_pointer, self._decode_rotation_keyframe)
@@ -253,7 +269,9 @@ class BinaryDecoder(object):
     def _decode_position_keyframe(self, size: int, frame: int, reader: BinaryReader) -> PositionKeyframe:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#position
 
-        assert(size == 16)
+        if size != 16:
+            raise ValueError(f'position keyframe not 16 bytes ({size})')
+
         x = reader.read_f32()
         y = reader.read_f32()
         z = reader.read_f32()
@@ -262,7 +280,8 @@ class BinaryDecoder(object):
     def _decode_anchor_point_keyframe(self, size: int, frame: int, reader: BinaryReader) -> AnchorPointKeyframe:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#anchor-point
 
-        assert(size == 16)
+        if size != 16:
+            raise ValueError(f'anchor point keyframe not 16 bytes ({size})')
 
         # re-normalize from 0-100 to 0-1, for consistency
         x = reader.read_f32() / 100
@@ -274,7 +293,8 @@ class BinaryDecoder(object):
     def _decode_colour_keyframe(self, size: int, frame: int, reader: BinaryReader) -> ColourKeyframe:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#colour
 
-        assert(size == 8 or size == 20)
+        if size != 8 and size != 20:
+            raise ValueError(f'colour keyframe not 8 or 20 bytes ({size})')
 
         if size == 8:
             r = reader.read_u8()
@@ -294,7 +314,8 @@ class BinaryDecoder(object):
     def _decode_scale_keyframe(self, size: int, frame: int, reader: BinaryReader) -> ScaleKeyframe:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#colour
 
-        assert(size == 12)
+        if size != 12:
+            raise ValueError(f'scale keyframe not 12 bytes ({size})')
 
         # re-normalize from 0-100 to 0-1, for consistency
         x = reader.read_f32() / 100
@@ -305,7 +326,8 @@ class BinaryDecoder(object):
     def _decode_alpha_keyframe(self, size: int, frame: int, reader: BinaryReader) -> AlphaKeyframe:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#alpha
 
-        assert(size == 8)
+        if size != 8:
+            raise ValueError(f'alpha keyframe not 8 bytes ({size})')
 
         # re-normalize from 0-100 to 0-1, for consistency
         value = reader.read_f32() / 100
@@ -315,14 +337,18 @@ class BinaryDecoder(object):
     def _decode_rotation_keyframe(self, size: int, frame: int, reader: BinaryReader) -> RotationKeyframe:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#rotation
 
-        assert(size == 8)
+        if size != 8:
+            raise ValueError(f'rotation keyframe not 8 bytes ({size})')
+
         degrees = reader.read_f32()
         return RotationKeyframe(frame, degrees)
 
     def _decode_size_keyframe(self, size: int, frame: int, reader: BinaryReader) -> SizeKeyframe:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#size
 
-        assert(size == 8)
+        if size != 8:
+            raise ValueError(f'size keyframe not 8 bytes ({size})')
+
         width = reader.read_u16()
         height = reader.read_u16()
         return SizeKeyframe(frame, width, height)
@@ -331,9 +357,11 @@ class BinaryDecoder(object):
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#marker
 
         if self.architecture == Architecture.X86:
-            assert(size == 12)
+            if size != 12:
+                raise ValueError(f'x86 marker keyframe not 12 bytes ({size})')
         elif self.architecture == Architecture.X64:
-            assert(size == 16)
+            if size != 16:
+                raise ValueError(f'x64 marker keyframe not 16 bytes ({size})')
 
         unknown = reader.read_u32()
         name = reader.read_string()
