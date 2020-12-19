@@ -685,6 +685,7 @@ class BinaryEncoder(object):
         keyframes_writer.write_f32(keyframe.z)
 
     def _encode_anchor_point_keyframe(self, keyframe: AnchorPointKeyframe, section_pointers: SectionPointers, keyframes_writer: BinaryWriter, strings_writer: BinaryStringWriter) -> None:
+        # re-normalize back to 0-100 from 0-1
         keyframes_writer.write_f32(keyframe.x * 100)
         keyframes_writer.write_f32(keyframe.y * 100)
         keyframes_writer.write_f32(keyframe.z * 100)
@@ -696,10 +697,12 @@ class BinaryEncoder(object):
         keyframes_writer.write_u8(keyframe.a)
 
     def _encode_scale_keyframe(self, keyframe: ScaleKeyframe, section_pointers: SectionPointers, keyframes_writer: BinaryWriter, strings_writer: BinaryStringWriter) -> None:
+        # re-normalize back to 0-100 from 0-1
         keyframes_writer.write_f32(keyframe.x * 100)
         keyframes_writer.write_f32(keyframe.y * 100)
 
     def _encode_alpha_keyframe(self, keyframe: AlphaKeyframe, section_pointers: SectionPointers, keyframes_writer: BinaryWriter, strings_writer: BinaryStringWriter) -> None:
+        # re-normalize back to 0-100 from 0-1
         keyframes_writer.write_f32(keyframe.value * 100)
 
     def _encode_rotation_keyframe(self, keyframe: RotationKeyframe, section_pointers: SectionPointers, keyframes_writer: BinaryWriter, strings_writer: BinaryStringWriter) -> None:
