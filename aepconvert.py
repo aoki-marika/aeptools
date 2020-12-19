@@ -36,6 +36,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    print(f'{args.input_path} ({args.input_format})', '->', f'{args.output_path} ({args.output_format})')
     project = DECODERS[args.input_format].decode(args.input_path)
     ENCODERS[args.output_format].encode(project, args.output_path)
 
