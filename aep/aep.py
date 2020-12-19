@@ -112,13 +112,17 @@ class Layer(object):
         self.markers = markers
 
     @property
-    def asset_name(self):
+    def asset_name(self) -> str:
         # https://github.com/aoki-marika/aeptools/wiki/Format-(x86-and-x64)#layer
 
         if '-' in self.name:
             return self.name.split('-')[1]
         else:
             return self.name
+
+    @property
+    def has_timeline(self) -> bool:
+        return self.timeline_start != None and self.timeline_unknown1 != None and self.timeline_duration != None and self.timeline_unknown2 != None
 
 class Keyframe(object):
     def __init__(self, frame: int) -> None:

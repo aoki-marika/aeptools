@@ -295,7 +295,7 @@ class JsonEncoder(object):
 
     def _encode_rotation_keyframe(self, keyframe: RotationKeyframe) -> Dict[str, Any]:
         return {
-            'rotation': keyframe.degrees,
+            'degrees': keyframe.degrees,
         }
 
     def _encode_size_keyframe(self, keyframe: SizeKeyframe) -> Dict[str, Any]:
