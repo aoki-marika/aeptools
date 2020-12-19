@@ -21,7 +21,172 @@ class JsonDecoder(object):
         return
 
     def decode(self, input_path: Path) -> Project:
-        return None
+        with input_path.open('r') as input_file:
+            input = json.load(input_file)
+
+            textures = self._decode_textures(input['textures'])
+            compositions = self._decode_compositions(input['compositions'])
+
+            return Project(textures, compositions)
+
+    def _decode_textures(self, input: Dict[str, Any]) -> Sequence[Texture]:
+        textures = []
+        for name in input.keys():
+            width = int(input[name]['width'])
+            height = int(input[name]['height'])
+
+            self._assert_u16(width, f'texture \'{name}\' width')
+            self._assert_u16(height, f'texture \'{name}\' height')
+
+            textures.append(Texture(name, width, height))
+
+        return textures
+
+    def _decode_compositions(self, input: Dict[str, Any]) -> Sequence[Composition]:
+        compositions = []
+        for name in input.keys():
+            width = int(input[name]['width'])
+            height = int(input[name]['height'])
+
+            self._assert_u16(width, f'composition \'{name}\' width')
+            self._assert_u16(height, f'composition \'{name}\' height')
+
+            layers = []
+            for layer in input[name]['layers']:
+                layers.append(self._decode_layer(layer))
+
+            compositions.append(Composition(name, width, height, layers))
+
+        return compositions
+
+    def _decode_layer(self, input: Dict[str, Any]) -> Layer:
+        name = input['name']
+        type = LAYER_TYPES[input['type']]
+        blend_mode = BLEND_MODES[input['blend_mode']]
+        timeline_start = int(input['timeline_start']) if input['timeline_start'] != None else None
+        timeline_unknown1 = int(input['timeline_unknown1']) if input['timeline_unknown1'] != None else None
+        timeline_duration = int(input['timeline_duration']) if input['timeline_duration'] != None else None
+        timeline_unknown2 = int(input['timeline_unknown2']) if input['timeline_unknown2'] != None else None
+
+        self._assert_u16(timeline_start, f'layer \'{name}\' timeline_start')
+        self._assert_u16(timeline_unknown1, f'layer \'{name}\' timeline_unknown1')
+        self._assert_u16(timeline_duration, f'layer \'{name}\' timeline_duration')
+        self._assert_u32(timeline_unknown2, f'layer \'{name}\' timeline_unknown2')
+
+        return Layer(
+            name,
+            type,
+            blend_mode,
+            timeline_start,
+            timeline_unknown1,
+            timeline_duration,
+            timeline_unknown2,
+            self._decode_keyframes(input.get('position_keyframes'), self._decode_position_keyframe),
+            self._decode_keyframes(input.get('anchor_point_keyframes'), self._decode_anchor_point_keyframe),
+            self._decode_keyframes(input.get('colour_keyframes'), self._decode_colour_keyframe),
+            self._decode_keyframes(input.get('scale_keyframes'), self._decode_scale_keyframe),
+            self._decode_keyframes(input.get('alpha_keyframes'), self._decode_alpha_keyframe),
+            self._decode_keyframes(input.get('rotation_x_keyframes'), self._decode_rotation_keyframe),
+            self._decode_keyframes(input.get('rotation_y_keyframes'), self._decode_rotation_keyframe),
+            self._decode_keyframes(input.get('rotation_z_keyframes'), self._decode_rotation_keyframe),
+            self._decode_keyframes(input.get('size_keyframes'), self._decode_size_keyframe),
+            self._decode_keyframes(input.get('markers'), self._decode_marker_keyframe)
+        )
+
+    def _decode_keyframes(self, input: Optional[Sequence[Dict[str, Any]]], decode_keyframe: Callable[[int, Dict[str, Any]], Keyframe]) -> Optional[Sequence[Keyframe]]:
+        if input == None:
+            return None
+
+        keyframes = []
+        for keyframe in input:
+            frame = int(keyframe['frame'])
+
+            self._assert_u16(frame, 'keyframe frame')
+
+            keyframes.append(decode_keyframe(frame, keyframe))
+
+        # empty keyframes should still be treated as null
+        if not keyframes:
+            return None
+
+        return keyframes
+
+    def _decode_position_keyframe(self, frame: int, input: Dict[str, Any]) -> PositionKeyframe:
+        x = float(input['x'])
+        y = float(input['y'])
+        z = float(input['z'])
+
+        return PositionKeyframe(frame, x, y, z)
+
+    def _decode_anchor_point_keyframe(self, frame: int, input: Dict[str, Any]) -> AnchorPointKeyframe:
+        x = float(input['x'])
+        y = float(input['y'])
+        z = float(input['z'])
+
+        return AnchorPointKeyframe(frame, x, y, z)
+
+    def _decode_colour_keyframe(self, frame: int, input: Dict[str, Any]) -> ColourKeyframe:
+        input = input['rgba']
+        if not input.startswith('#'):
+            raise ValueError(f'invalid rgba colour ({hex})')
+
+        hex = input[1:]
+        if len(hex) != 8:
+            raise ValueError(f'invalid rgba colour ({hex})')
+
+        rgba = int.from_bytes(bytes.fromhex(hex), 'big')
+        r = (rgba >> 24) & 0xff
+        g = (rgba >> 16) & 0xff
+        b = (rgba >> 8) & 0xff
+        a = rgba & 0xff
+
+        return ColourKeyframe(frame, r, g, b, a)
+
+    def _decode_scale_keyframe(self, frame: int, input: Dict[str, Any]) -> ScaleKeyframe:
+        x = float(input['x'])
+        y = float(input['y'])
+
+        return ScaleKeyframe(frame, x, y)
+
+    def _decode_alpha_keyframe(self, frame: int, input: Dict[str, Any]) -> AlphaKeyframe:
+        value = float(input['value'])
+
+        return AlphaKeyframe(frame, value)
+
+    def _decode_rotation_keyframe(self, frame: int, input: Dict[str, Any]) -> RotationKeyframe:
+        degrees = float(input['degrees'])
+
+        return RotationKeyframe(frame, degrees)
+
+    def _decode_size_keyframe(self, frame: int, input: Dict[str, Any]) -> SizeKeyframe:
+        width = int(input['width'])
+        height = int(input['height'])
+
+        self._assert_u16(width, 'size keyframe width')
+        self._assert_u16(height, 'size keyframe height')
+
+        return SizeKeyframe(frame, width, height)
+
+    def _decode_marker_keyframe(self, frame: int, input: Dict[str, Any]) -> Marker:
+        unknown = int(input['unknown'])
+        name = input['name']
+
+        self._assert_u32(unknown, 'marker unknown')
+
+        return Marker(frame, unknown, name)
+
+    def _assert_un(self, value: Optional[int], name: str, num_bits: int) -> None:
+        if value == None:
+            return
+
+        if value < 0 or value >= (2**num_bits):
+            raise ValueError(f'{name} ({value}) is outside of bounds (0 to {(2**num_bits) - 1})')
+
+    def _assert_u16(self, value: Optional[int], name: str) -> None:
+        self._assert_un(value, name, 16)
+
+    def _assert_u32(self, value: Optional[int], name: str) -> None:
+        self._assert_un(value, name, 32)
 
 class JsonEncoder(object):
     def __init__(self) -> None:
