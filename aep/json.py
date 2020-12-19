@@ -21,7 +21,7 @@ class JsonDecoder(object):
         return
 
     def decode(self, input_path: Path) -> Project:
-        with input_path.open('r') as input_file:
+        with input_path.open('r', encoding='utf-8') as input_file:
             input = json.load(input_file)
 
             textures = self._decode_textures(input['textures'])
@@ -35,6 +35,7 @@ class JsonDecoder(object):
             width = int(input[name]['width'])
             height = int(input[name]['height'])
 
+            self._assert_ascii(name, f'texture \'{name}\' name')
             self._assert_u16(width, f'texture \'{name}\' width')
             self._assert_u16(height, f'texture \'{name}\' height')
 
@@ -48,6 +49,7 @@ class JsonDecoder(object):
             width = int(input[name]['width'])
             height = int(input[name]['height'])
 
+            self._assert_ascii(name, f'composition \'{name}\' name')
             self._assert_u16(width, f'composition \'{name}\' width')
             self._assert_u16(height, f'composition \'{name}\' height')
 
@@ -68,6 +70,7 @@ class JsonDecoder(object):
         timeline_duration = int(input['timeline_duration']) if input['timeline_duration'] != None else None
         timeline_unknown2 = int(input['timeline_unknown2']) if input['timeline_unknown2'] != None else None
 
+        self._assert_ascii(name, f'layer \'{name}\' name')
         self._assert_u16(timeline_start, f'layer \'{name}\' timeline_start')
         self._assert_u16(timeline_unknown1, f'layer \'{name}\' timeline_unknown1')
         self._assert_u16(timeline_duration, f'layer \'{name}\' timeline_duration')
@@ -171,7 +174,8 @@ class JsonDecoder(object):
         unknown = int(input['unknown'])
         name = input['name']
 
-        self._assert_u32(unknown, 'marker unknown')
+        self._assert_ascii(name, f'marker \'{name}\' name')
+        self._assert_u32(unknown, f'marker \'{name}\' unknown')
 
         return Marker(frame, unknown, name)
 
@@ -188,12 +192,21 @@ class JsonDecoder(object):
     def _assert_u32(self, value: Optional[int], name: str) -> None:
         self._assert_un(value, name, 32)
 
+    def _assert_ascii(self, value: Optional[str], name: str) -> None:
+        if value == None:
+            return
+
+        try:
+            value.encode('ascii')
+        except UnicodeEncodeError:
+            raise ValueError(f'{name} ({value}) is not ascii')
+
 class JsonEncoder(object):
     def __init__(self) -> None:
         return
 
     def encode(self, project: Project, output_path: Path) -> None:
-        with output_path.open('w+') as output_file:
+        with output_path.open('w+', encoding='utf-8') as output_file:
             output = {
                 'textures': {t.name: self._encode_texture(t) for t in project.textures},
                 'compositions': {c.name: self._encode_composition(c) for c in project.compositions},
