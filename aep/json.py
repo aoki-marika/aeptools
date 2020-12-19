@@ -226,34 +226,34 @@ class JsonEncoder(object):
         }
 
         if layer.position_keyframes != None:
-            output['position_keyframes'] = self._encode_keyframes(layer.position_keyframes, self._encode_position_keyframe),
+            output['position_keyframes'] = self._encode_keyframes(layer.position_keyframes, self._encode_position_keyframe)
 
         if layer.anchor_point_keyframes != None:
-            output['anchor_point_keyframes'] = self._encode_keyframes(layer.anchor_point_keyframes, self._encode_anchor_point_keyframe),
+            output['anchor_point_keyframes'] = self._encode_keyframes(layer.anchor_point_keyframes, self._encode_anchor_point_keyframe)
 
         if layer.colour_keyframes != None:
-            output['colour_keyframes'] = self._encode_keyframes(layer.colour_keyframes, self._encode_colour_keyframe),
+            output['colour_keyframes'] = self._encode_keyframes(layer.colour_keyframes, self._encode_colour_keyframe)
 
         if layer.scale_keyframes != None:
-            output['scale_keyframes'] = self._encode_keyframes(layer.scale_keyframes, self._encode_scale_keyframe),
+            output['scale_keyframes'] = self._encode_keyframes(layer.scale_keyframes, self._encode_scale_keyframe)
 
         if layer.alpha_keyframes != None:
-            output['alpha_keyframes'] = self._encode_keyframes(layer.alpha_keyframes, self._encode_alpha_keyframe),
+            output['alpha_keyframes'] = self._encode_keyframes(layer.alpha_keyframes, self._encode_alpha_keyframe)
 
         if layer.rotation_x_keyframes != None:
-            output['rotation_x_keyframes'] = self._encode_keyframes(layer.rotation_x_keyframes, self._encode_rotation_keyframe),
+            output['rotation_x_keyframes'] = self._encode_keyframes(layer.rotation_x_keyframes, self._encode_rotation_keyframe)
 
         if layer.rotation_y_keyframes != None:
-            output['rotation_y_keyframes'] = self._encode_keyframes(layer.rotation_y_keyframes, self._encode_rotation_keyframe),
+            output['rotation_y_keyframes'] = self._encode_keyframes(layer.rotation_y_keyframes, self._encode_rotation_keyframe)
 
         if layer.rotation_z_keyframes != None:
-            output['rotation_z_keyframes'] = self._encode_keyframes(layer.rotation_z_keyframes, self._encode_rotation_keyframe),
+            output['rotation_z_keyframes'] = self._encode_keyframes(layer.rotation_z_keyframes, self._encode_rotation_keyframe)
 
         if layer.size_keyframes != None:
-            output['size_keyframes'] = self._encode_keyframes(layer.size_keyframes, self._encode_size_keyframe),
+            output['size_keyframes'] = self._encode_keyframes(layer.size_keyframes, self._encode_size_keyframe)
 
         if layer.markers != None:
-            output['markers'] = self._encode_keyframes(layer.markers, self._encode_marker_keyframe),
+            output['markers'] = self._encode_keyframes(layer.markers, self._encode_marker_keyframe)
 
         return output
 
